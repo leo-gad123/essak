@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { AuthProvider } from "../lib/auth-context";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -72,11 +74,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "StockNova — Inventory & Stock Management" },
+      { name: "description", content: "Track items, suppliers, and stock movements with real-time alerts and exportable reports." },
+      { name: "author", content: "StockNova" },
+      { property: "og:title", content: "StockNova" },
+      { property: "og:description", content: "Real-time inventory and stock management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -113,7 +115,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <AuthProvider>
+        <Outlet />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
