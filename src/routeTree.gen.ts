@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppSuppliersRouteImport } from './routes/_app/suppliers'
 import { Route as AppStockMovementRouteImport } from './routes/_app/stock-movement'
+import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppItemsRouteImport } from './routes/_app/items'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCategoriesRouteImport } from './routes/_app/categories'
@@ -48,6 +49,11 @@ const AppStockMovementRoute = AppStockMovementRouteImport.update({
   path: '/stock-movement',
   getParentRoute: () => AppRoute,
 } as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppItemsRoute = AppItemsRouteImport.update({
   id: '/items',
   path: '/items',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/items': typeof AppItemsRoute
+  '/reports': typeof AppReportsRoute
   '/stock-movement': typeof AppStockMovementRoute
   '/suppliers': typeof AppSuppliersRoute
 }
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/items': typeof AppItemsRoute
+  '/reports': typeof AppReportsRoute
   '/stock-movement': typeof AppStockMovementRoute
   '/suppliers': typeof AppSuppliersRoute
 }
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_app/categories': typeof AppCategoriesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/items': typeof AppItemsRoute
+  '/_app/reports': typeof AppReportsRoute
   '/_app/stock-movement': typeof AppStockMovementRoute
   '/_app/suppliers': typeof AppSuppliersRoute
 }
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/dashboard'
     | '/items'
+    | '/reports'
     | '/stock-movement'
     | '/suppliers'
   fileRoutesByTo: FileRoutesByTo
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/dashboard'
     | '/items'
+    | '/reports'
     | '/stock-movement'
     | '/suppliers'
   id:
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_app/categories'
     | '/_app/dashboard'
     | '/_app/items'
+    | '/_app/reports'
     | '/_app/stock-movement'
     | '/_app/suppliers'
   fileRoutesById: FileRoutesById
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStockMovementRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/items': {
       id: '/_app/items'
       path: '/items'
@@ -209,6 +228,7 @@ interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppItemsRoute: typeof AppItemsRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppStockMovementRoute: typeof AppStockMovementRoute
   AppSuppliersRoute: typeof AppSuppliersRoute
 }
@@ -217,6 +237,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppItemsRoute: AppItemsRoute,
+  AppReportsRoute: AppReportsRoute,
   AppStockMovementRoute: AppStockMovementRoute,
   AppSuppliersRoute: AppSuppliersRoute,
 }
