@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRealtimeList } from "@/lib/db/hooks";
 import type { Item, StockMovement, Notification } from "@/lib/db/types";
@@ -7,11 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
-export const Route = createFileRoute("/_app/dashboard")({
-  component: Dashboard,
-});
-
-function Dashboard() {
+export default function Dashboard() {
   const { data: items } = useRealtimeList<Item>("items");
   const { data: movements } = useRealtimeList<StockMovement>("stock_movements");
   const { data: notifs } = useRealtimeList<Notification>("notifications");
@@ -21,9 +17,11 @@ function Dashboard() {
   const recent = [...movements].sort((a, b) => b.createdAt - a.createdAt).slice(0, 8);
   const itemMap = new Map(items.map((i) => [i.id, i]));
 
-  const chartData = items
-    .slice(0, 8)
-    .map((i) => ({ name: i.name.slice(0, 10), used: i.quantityUsed, remaining: i.remaining }));
+  const chartData = items.slice(0, 8).map((i) => ({
+    name: i.name.slice(0, 10),
+    used: i.quantityUsed,
+    remaining: i.remaining,
+  }));
 
   return (
     <div className="space-y-6">
@@ -35,20 +33,13 @@ function Dashboard() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard icon={<Package className="h-4 w-4" />} label="Total items" value={items.length} />
         <StatCard icon={<Activity className="h-4 w-4" />} label="Total remaining" value={totalRemaining} />
-        <StatCard
-          icon={<AlertTriangle className="h-4 w-4 text-warning-foreground" />}
-          label="Low stock"
-          value={lowStock.length}
-          accent="warning"
-        />
+        <StatCard icon={<AlertTriangle className="h-4 w-4" />} label="Low stock" value={lowStock.length} accent="warning" />
         <StatCard icon={<ArrowDownToLine className="h-4 w-4" />} label="Movements" value={movements.length} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Top items — usage vs remaining</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Top items — usage vs remaining</CardTitle></CardHeader>
           <CardContent>
             {items.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
@@ -60,13 +51,7 @@ function Dashboard() {
                   <BarChart data={chartData}>
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={{
-                        background: "var(--popover)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                      }}
-                    />
+                    <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
                     <Bar dataKey="used" fill="oklch(0.46 0.18 270)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="remaining" fill="oklch(0.62 0.2 275)" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -77,9 +62,7 @@ function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Low-stock alerts</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Low-stock alerts</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {lowStock.length === 0 ? (
               <p className="text-sm text-muted-foreground">All stock levels healthy.</p>
@@ -87,9 +70,7 @@ function Dashboard() {
               lowStock.slice(0, 6).map((i) => (
                 <div key={i.id} className="flex items-center justify-between rounded-md border border-border p-2">
                   <span className="text-sm font-medium">{i.name}</span>
-                  <Badge variant="destructive">
-                    {i.remaining} {i.unitType}
-                  </Badge>
+                  <Badge variant="destructive">{i.remaining} {i.unitType}</Badge>
                 </div>
               ))
             )}
@@ -101,9 +82,7 @@ function Dashboard() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Recent movements</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Recent movements</CardTitle></CardHeader>
         <CardContent>
           {recent.length === 0 ? (
             <p className="text-sm text-muted-foreground">No movements recorded yet.</p>
@@ -129,15 +108,9 @@ function Dashboard() {
 }
 
 function StatCard({
-  icon,
-  label,
-  value,
-  accent,
+  icon, label, value, accent,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  accent?: "warning";
+  icon: React.ReactNode; label: string; value: number; accent?: "warning";
 }) {
   return (
     <Card className={accent === "warning" ? "border-warning/40 bg-warning/5" : undefined}>

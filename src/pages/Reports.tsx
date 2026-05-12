@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useRealtimeList } from "@/lib/db/hooks";
 import type { Item, StockMovement } from "@/lib/db/types";
@@ -8,13 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { generateMovementsReport } from "@/lib/pdf";
 import { Download } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfDay, startOfWeek, startOfMonth } from "date-fns";
 
-export const Route = createFileRoute("/_app/reports")({
-  component: ReportsPage,
-});
-
-function ReportsPage() {
+export default function Reports() {
   const { data: items } = useRealtimeList<Item>("items");
   const { data: movements } = useRealtimeList<StockMovement>("stock_movements");
 
@@ -35,11 +30,30 @@ function ReportsPage() {
     });
   };
 
+  const exportPreset = (preset: "day" | "week" | "month") => {
+    const now = new Date();
+    const start = preset === "day" ? startOfDay(now) : preset === "week" ? startOfWeek(now) : startOfMonth(now);
+    const filtered = movements.filter((m) => m.createdAt >= start.getTime());
+    generateMovementsReport({
+      title: `${preset === "day" ? "Daily" : preset === "week" ? "Weekly" : "Monthly"} report`,
+      rangeLabel: `${format(start, "PP")} – ${format(now, "PP")}`,
+      movements: filtered,
+      items,
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-        <p className="text-muted-foreground">Generate custom PDF reports for any date range.</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <p className="text-muted-foreground">Generate PDF reports for any date range.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => exportPreset("day")}><Download className="mr-2 h-4 w-4" />Daily</Button>
+          <Button variant="outline" onClick={() => exportPreset("week")}><Download className="mr-2 h-4 w-4" />Weekly</Button>
+          <Button variant="outline" onClick={() => exportPreset("month")}><Download className="mr-2 h-4 w-4" />Monthly</Button>
+        </div>
       </div>
       <Card className="max-w-2xl">
         <CardHeader><CardTitle>Custom range</CardTitle></CardHeader>

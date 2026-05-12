@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ref, push, set, remove, update } from "firebase/database";
 import { db } from "@/lib/firebase";
@@ -14,11 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/_app/suppliers")({
-  component: SuppliersPage,
-});
-
-function SuppliersPage() {
+export default function Suppliers() {
   const { data } = useRealtimeList<Supplier>("suppliers");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

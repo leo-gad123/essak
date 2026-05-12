@@ -1,12 +1,10 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
   Truck,
-  ArrowLeftRight,
   FileBarChart,
   Users,
-  Settings,
   LogOut,
   Boxes,
 } from "lucide-react";
@@ -29,14 +27,13 @@ const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Items", url: "/items", icon: Package },
   { title: "Suppliers", url: "/suppliers", icon: Truck },
-  { title: "Stock Movement", url: "/stock-movement", icon: ArrowLeftRight },
   { title: "Reports", url: "/reports", icon: FileBarChart },
 ];
 
 export function AppSidebar() {
-  const path = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname } = useLocation();
   const { user, signOutUser } = useAuth();
-  const isActive = (url: string) => path === url || path.startsWith(url + "/");
+  const isActive = (url: string) => pathname === url || pathname.startsWith(url + "/");
 
   return (
     <Sidebar collapsible="icon">
@@ -86,21 +83,6 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/settings")}>
-                  <Link to="/settings">
-                    <Settings />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <div className="flex items-center justify-between gap-2 px-2 py-2">

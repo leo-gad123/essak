@@ -1,24 +1,8 @@
-import { createFileRoute, Outlet, Navigate } from "@tanstack/react-router";
+import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { useAuth } from "@/lib/auth-context";
 
-export const Route = createFileRoute("/_app")({
-  component: AppLayout,
-});
-
-function AppLayout() {
-  const { user, loading, configured } = useAuth();
-
-  if (!configured) return <Navigate to="/setup" />;
-  if (loading)
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Loading…
-      </div>
-    );
-  if (!user) return <Navigate to="/login" />;
-
+export function AppLayout() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
