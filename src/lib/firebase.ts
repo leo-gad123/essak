@@ -3,27 +3,22 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const config = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL as string,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
+  apiKey: "AIzaSyAueb8nNqYmHy2yU-z6MKNBhg1SvMKI00A",
+  authDomain: "home-d9fb3.firebaseapp.com",
+  databaseURL: "https://home-d9fb3-default-rtdb.firebaseio.com",
+  projectId: "home-d9fb3",
+  storageBucket: "home-d9fb3.firebasestorage.app",
+  messagingSenderId: "739425830376",
+  appId: "1:739425830376:web:9d2379d1ddd0c579e4905d",
+  measurementId: "G-XNR673SZVD",
 };
 
-export const isFirebaseConfigured = Boolean(
-  config.apiKey && config.authDomain && config.databaseURL && config.projectId,
-);
+export const isFirebaseConfigured = true;
 
-const stubApp = { name: "stub" } as unknown as FirebaseApp;
+export const firebaseApp: FirebaseApp = getApps().length ? getApp() : initializeApp(config);
 
-export const firebaseApp: FirebaseApp = isFirebaseConfigured
-  ? getApps().length
-    ? getApp()
-    : initializeApp(config)
-  : stubApp;
-
-export const auth = isFirebaseConfigured ? getAuth(firebaseApp) : (null as unknown as ReturnType<typeof getAuth>);
-export const db = isFirebaseConfigured ? getDatabase(firebaseApp) : (null as unknown as ReturnType<typeof getDatabase>);
+export const auth = getAuth(firebaseApp);
+export const db = getDatabase(firebaseApp);
 
 // Secondary app for admin user creation (so it doesn't sign out current admin)
 export function getSecondaryApp(): FirebaseApp {
