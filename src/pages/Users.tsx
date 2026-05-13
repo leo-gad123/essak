@@ -67,12 +67,12 @@ export default function Users() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Users</h1>
         <p className="text-muted-foreground">Manage team access and personal settings.</p>
       </div>
 
       <Tabs defaultValue="users">
-        <TabsList>
+        <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -82,11 +82,11 @@ export default function Users() {
             <CardHeader><CardTitle>Add user</CardTitle></CardHeader>
             <CardContent>
               <form onSubmit={onCreate} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2"><Label>Display name</Label><Input required value={name} onChange={(e) => setName(e.target.value)} /></div>
                   <div className="space-y-2"><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2"><Label>Password</Label><Input type="password" minLength={6} required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
                   <div className="space-y-2">
                     <Label>Role</Label>

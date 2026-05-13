@@ -46,7 +46,7 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Reports</h1>
           <p className="text-muted-foreground">Generate stock-movement reports or a full inventory overview.</p>
         </div>
       </div>
