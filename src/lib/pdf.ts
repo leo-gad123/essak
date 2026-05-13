@@ -70,3 +70,51 @@ export function generateMovementsReport(opts: {
 
   doc.save(`stocknova-${opts.title.toLowerCase().replace(/\s+/g, "-")}.pdf`);
 }
+
+export function generateItemsOverviewReport(items: Item[]) {
+  const doc = new jsPDF();
+
+  doc.setFillColor(70, 50, 200);
+  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 22, "F");
+  doc.setTextColor(255);
+  doc.setFontSize(16);
+  doc.text("StockNova", 14, 14);
+  doc.setFontSize(10);
+  doc.text("Items overview", doc.internal.pageSize.getWidth() - 14, 14, { align: "right" });
+
+  doc.setTextColor(20);
+  doc.setFontSize(11);
+  doc.text("Inventory snapshot", 14, 32);
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text(`Generated ${format(new Date(), "PPpp")}`, 14, 38);
+
+  const totalAdded = items.reduce((s, i) => s + (i.quantityAdded ?? 0), 0);
+  const totalUsed = items.reduce((s, i) => s + (i.quantityUsed ?? 0), 0);
+  const totalRemaining = items.reduce((s, i) => s + (i.remaining ?? 0), 0);
+
+  doc.setTextColor(20);
+  doc.setFontSize(10);
+  doc.text(
+    `Items: ${items.length}    Added: ${totalAdded}    Used: ${totalUsed}    Remaining: ${totalRemaining}`,
+    14,
+    46,
+  );
+
+  autoTable(doc, {
+    startY: 52,
+    head: [["Item", "Unit", "Size", "Added", "Used", "Remaining"]],
+    body: items.map((i) => [
+      i.name,
+      i.unitType,
+      i.size ?? "—",
+      String(i.quantityAdded ?? 0),
+      String(i.quantityUsed ?? 0),
+      String(i.remaining ?? 0),
+    ]),
+    headStyles: { fillColor: [70, 50, 200] },
+    styles: { fontSize: 9 },
+  });
+
+  doc.save(`stocknova-items-overview.pdf`);
+}

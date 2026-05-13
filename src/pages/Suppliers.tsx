@@ -43,22 +43,27 @@ export default function Suppliers() {
                 const editing = editingId === s.id;
                 return (
                   <div key={s.id} className="grid grid-cols-12 items-center gap-3 py-3 text-sm">
-                    <div className="col-span-3 font-medium">
+                    <div className="col-span-2 font-medium">
                       {editing ? (
                         <Input value={draft.name ?? s.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
                       ) : s.name}
+                    </div>
+                    <div className="col-span-3 text-muted-foreground">
+                      {editing ? (
+                        <Input value={draft.supplies ?? s.supplies ?? ""} onChange={(e) => setDraft({ ...draft, supplies: e.target.value })} placeholder="Supplies (e.g. Rice, Oil)" />
+                      ) : (s.supplies ?? "—")}
                     </div>
                     <div className="col-span-2 text-muted-foreground">
                       {editing ? (
                         <Input value={draft.phone ?? s.phone ?? ""} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} placeholder="Phone" />
                       ) : (s.phone ?? "—")}
                     </div>
-                    <div className="col-span-3 text-muted-foreground">
+                    <div className="col-span-2 text-muted-foreground">
                       {editing ? (
                         <Input value={draft.email ?? s.email ?? ""} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="Email" />
                       ) : (s.email ?? "—")}
                     </div>
-                    <div className="col-span-3 text-muted-foreground">
+                    <div className="col-span-2 text-muted-foreground">
                       {editing ? (
                         <Input value={draft.address ?? s.address ?? ""} onChange={(e) => setDraft({ ...draft, address: e.target.value })} placeholder="Address" />
                       ) : (s.address ?? "—")}
@@ -101,6 +106,7 @@ export default function Suppliers() {
 
 function SupplierForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
+  const [supplies, setSupplies] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -112,13 +118,14 @@ function SupplierForm({ onClose }: { onClose: () => void }) {
         onSubmit={async (e) => {
           e.preventDefault();
           const r = push(ref(db, "suppliers"));
-          await set(r, nullify({ name, phone, email, address }));
+          await set(r, nullify({ name, supplies, phone, email, address }));
           toast.success("Supplier added");
           onClose();
         }}
         className="space-y-3"
       >
         <div className="space-y-2"><Label>Name</Label><Input required value={name} onChange={(e) => setName(e.target.value)} /></div>
+        <div className="space-y-2"><Label>What they supply</Label><Input placeholder="e.g. Rice, Cooking oil, Vegetables" value={supplies} onChange={(e) => setSupplies(e.target.value)} /></div>
         <div className="space-y-2"><Label>Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
         <div className="space-y-2"><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
         <div className="space-y-2"><Label>Address</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} /></div>

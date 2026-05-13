@@ -11,6 +11,7 @@ export interface Supplier {
   phone: string | null;
   email: string | null;
   address: string | null;
+  supplies: string | null;
 }
 
 export type UnitType = "kg" | "liters" | "pieces";

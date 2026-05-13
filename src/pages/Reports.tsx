@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { generateMovementsReport } from "@/lib/pdf";
-import { Download } from "lucide-react";
+import { generateMovementsReport, generateItemsOverviewReport } from "@/lib/pdf";
+import { Download, FileBarChart } from "lucide-react";
 import { format, startOfDay, startOfWeek, startOfMonth } from "date-fns";
 
 export default function Reports() {
@@ -47,14 +47,33 @@ export default function Reports() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">Generate PDF reports for any date range.</p>
+          <p className="text-muted-foreground">Generate stock-movement reports or a full inventory overview.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Stock movement reports</CardTitle></CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => exportPreset("day")}><Download className="mr-2 h-4 w-4" />Daily</Button>
           <Button variant="outline" onClick={() => exportPreset("week")}><Download className="mr-2 h-4 w-4" />Weekly</Button>
           <Button variant="outline" onClick={() => exportPreset("month")}><Download className="mr-2 h-4 w-4" />Monthly</Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All items overview</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            One PDF listing every item with quantity added, used, and remaining.
+          </p>
+          <Button onClick={() => generateItemsOverviewReport(items)}>
+            <FileBarChart className="mr-2 h-4 w-4" />Generate items overview
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card className="max-w-2xl">
         <CardHeader><CardTitle>Custom range</CardTitle></CardHeader>
         <CardContent className="space-y-4">

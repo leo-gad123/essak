@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRealtimeList } from "@/lib/db/hooks";
 import type { Item, StockMovement, Notification } from "@/lib/db/types";
-import { Package, AlertTriangle, ArrowDownToLine, Activity } from "lucide-react";
+import { Package, AlertTriangle, ArrowDownToLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
@@ -13,7 +13,6 @@ export default function Dashboard() {
   const { data: notifs } = useRealtimeList<Notification>("notifications");
 
   const lowStock = items.filter((i) => i.remaining <= 0.25 * i.quantityAdded);
-  const totalRemaining = items.reduce((s, i) => s + (i.remaining ?? 0), 0);
   const recent = [...movements].sort((a, b) => b.createdAt - a.createdAt).slice(0, 8);
   const itemMap = new Map(items.map((i) => [i.id, i]));
 
@@ -30,9 +29,8 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Overview of your inventory and recent activity.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard icon={<Package className="h-4 w-4" />} label="Total items" value={items.length} />
-        <StatCard icon={<Activity className="h-4 w-4" />} label="Total remaining" value={totalRemaining} />
         <StatCard icon={<AlertTriangle className="h-4 w-4" />} label="Low stock" value={lowStock.length} accent="warning" />
         <StatCard icon={<ArrowDownToLine className="h-4 w-4" />} label="Movements" value={movements.length} />
       </div>
