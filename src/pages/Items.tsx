@@ -57,13 +57,13 @@ export default function Items() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Items</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Items</h1>
           <p className="text-muted-foreground">Inventory items, categories, and stock movements.</p>
         </div>
       </div>
 
       <Tabs defaultValue="items">
-        <TabsList>
+        <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="items">Items</TabsTrigger>
           <TabsTrigger value="movement">Stock movement</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
@@ -192,7 +192,7 @@ function ItemDialog({
       <DialogHeader><DialogTitle>{item ? "Edit item" : "New item"}</DialogTitle></DialogHeader>
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="space-y-2"><Label>Name</Label><Input required value={name} onChange={(e) => setName(e.target.value)} /></div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label>Category</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
@@ -212,7 +212,7 @@ function ItemDialog({
             </Select>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label>Unit type</Label>
             <Select value={unitType} onValueChange={(v) => setUnitType(v as UnitType)}>

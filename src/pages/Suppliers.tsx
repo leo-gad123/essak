@@ -21,9 +21,9 @@ export default function Suppliers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Suppliers</h1>
           <p className="text-muted-foreground">Directory of vendors and suppliers.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -42,33 +42,33 @@ export default function Suppliers() {
               {data.map((s) => {
                 const editing = editingId === s.id;
                 return (
-                  <div key={s.id} className="grid grid-cols-12 items-center gap-3 py-3 text-sm">
-                    <div className="col-span-2 font-medium">
+                  <div key={s.id} className="grid grid-cols-1 md:grid-cols-12 items-start md:items-center gap-2 md:gap-3 py-3 text-sm">
+                    <div className="md:col-span-2 font-medium">
                       {editing ? (
                         <Input value={draft.name ?? s.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
                       ) : s.name}
                     </div>
-                    <div className="col-span-3 text-muted-foreground">
+                    <div className="md:col-span-3 text-muted-foreground">
                       {editing ? (
                         <Input value={draft.supplies ?? s.supplies ?? ""} onChange={(e) => setDraft({ ...draft, supplies: e.target.value })} placeholder="Supplies (e.g. Rice, Oil)" />
                       ) : (s.supplies ?? "—")}
                     </div>
-                    <div className="col-span-2 text-muted-foreground">
+                    <div className="md:col-span-2 text-muted-foreground">
                       {editing ? (
                         <Input value={draft.phone ?? s.phone ?? ""} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} placeholder="Phone" />
                       ) : (s.phone ?? "—")}
                     </div>
-                    <div className="col-span-2 text-muted-foreground">
+                    <div className="md:col-span-2 text-muted-foreground break-all">
                       {editing ? (
                         <Input value={draft.email ?? s.email ?? ""} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="Email" />
                       ) : (s.email ?? "—")}
                     </div>
-                    <div className="col-span-2 text-muted-foreground">
+                    <div className="md:col-span-2 text-muted-foreground">
                       {editing ? (
                         <Input value={draft.address ?? s.address ?? ""} onChange={(e) => setDraft({ ...draft, address: e.target.value })} placeholder="Address" />
                       ) : (s.address ?? "—")}
                     </div>
-                    <div className="col-span-1 flex justify-end gap-1">
+                    <div className="md:col-span-1 flex justify-end gap-1">
                       {editing ? (
                         <>
                           <Button size="icon" variant="ghost" onClick={async () => {
