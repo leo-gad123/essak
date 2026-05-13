@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRealtimeList } from "@/lib/db/hooks";
 import type { Item, StockMovement, Notification } from "@/lib/db/types";
-import { Package, AlertTriangle, ArrowDownToLine, Activity } from "lucide-react";
+import { Package, AlertTriangle, ArrowDownToLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
