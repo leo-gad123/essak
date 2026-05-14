@@ -59,7 +59,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift">
           <CardHeader><CardTitle>Low-stock alerts</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {lowStock.length === 0 ? (
@@ -79,7 +79,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="hover-lift">
         <CardHeader><CardTitle>Recent movements</CardTitle></CardHeader>
         <CardContent>
           {recent.length === 0 ? (
