@@ -1,8 +1,9 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 
 export function AppLayout() {
+  const location = useLocation();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -13,7 +14,9 @@ export function AppLayout() {
             <div className="text-sm font-medium text-muted-foreground">StockNova</div>
           </header>
           <main className="flex-1 p-4 md:p-6">
-            <Outlet />
+            <div key={location.pathname} className="animate-fade-in">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

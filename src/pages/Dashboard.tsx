@@ -29,14 +29,14 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Overview of your inventory and recent activity.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 stagger">
         <StatCard icon={<Package className="h-4 w-4" />} label="Total items" value={items.length} />
         <StatCard icon={<AlertTriangle className="h-4 w-4" />} label="Low stock" value={lowStock.length} accent="warning" />
         <StatCard icon={<ArrowDownToLine className="h-4 w-4" />} label="Movements" value={movements.length} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-3 stagger">
+        <Card className="lg:col-span-2 hover-lift">
           <CardHeader><CardTitle>Top items — usage vs remaining</CardTitle></CardHeader>
           <CardContent>
             {items.length === 0 ? (
@@ -59,7 +59,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift">
           <CardHeader><CardTitle>Low-stock alerts</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {lowStock.length === 0 ? (
@@ -79,7 +79,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="hover-lift">
         <CardHeader><CardTitle>Recent movements</CardTitle></CardHeader>
         <CardContent>
           {recent.length === 0 ? (
@@ -111,7 +111,7 @@ function StatCard({
   icon: React.ReactNode; label: string; value: number; accent?: "warning";
 }) {
   return (
-    <Card className={accent === "warning" ? "border-warning/40 bg-warning/5" : undefined}>
+    <Card className={`hover-lift ${accent === "warning" ? "border-warning/40 bg-warning/5" : ""}`}>
       <CardContent className="p-5">
         <div className="flex items-center justify-between text-muted-foreground">
           <span className="text-sm">{label}</span>
