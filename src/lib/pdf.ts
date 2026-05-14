@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
-import type { StockMovement, Item } from "./db/types";
+import type { StockMovement, Item, Supplier } from "./db/types";
 
 export function generateMovementsReport(opts: {
   title: string;
@@ -117,4 +117,39 @@ export function generateItemsOverviewReport(items: Item[]) {
   });
 
   doc.save(`stocknova-items-overview.pdf`);
+}
+
+export function generateSuppliersReport(suppliers: Supplier[]) {
+  const doc = new jsPDF();
+
+  doc.setFillColor(70, 50, 200);
+  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 22, "F");
+  doc.setTextColor(255);
+  doc.setFontSize(16);
+  doc.text("StockNova", 14, 14);
+  doc.setFontSize(10);
+  doc.text("Suppliers directory", doc.internal.pageSize.getWidth() - 14, 14, { align: "right" });
+
+  doc.setTextColor(20);
+  doc.setFontSize(11);
+  doc.text(`Suppliers: ${suppliers.length}`, 14, 32);
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text(`Generated ${format(new Date(), "PPpp")}`, 14, 38);
+
+  autoTable(doc, {
+    startY: 46,
+    head: [["Name", "Supplies", "Phone", "Email", "Address"]],
+    body: suppliers.map((s) => [
+      s.name,
+      s.supplies ?? "—",
+      s.phone ?? "—",
+      s.email ?? "—",
+      s.address ?? "—",
+    ]),
+    headStyles: { fillColor: [70, 50, 200] },
+    styles: { fontSize: 9 },
+  });
+
+  doc.save(`stocknova-suppliers.pdf`);
 }

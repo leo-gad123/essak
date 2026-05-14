@@ -9,9 +9,9 @@ export function AppLayout() {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl">
             <SidebarTrigger />
-            <div className="text-sm font-medium text-muted-foreground">StockNova</div>
+            <div className="text-sm font-bold tracking-tight text-gradient">StockNova</div>
           </header>
           <main className="flex-1 p-4 md:p-6">
             <div key={location.pathname} className="animate-fade-in">

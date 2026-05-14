@@ -16,7 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Minus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Minus, Pencil, Trash2, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -29,23 +29,7 @@ export default function Items() {
 
   const [editing, setEditing] = useState<Item | null>(null);
   const [open, setOpen] = useState(false);
-
-  const adjustStock = async (item: Item, delta: number) => {
-    const next = Math.max(0, item.remaining + delta);
-    const usedDelta = item.remaining - next;
-    await update(ref(db, `items/${item.id}`), {
-      remaining: next,
-      quantityUsed: Math.max(0, item.quantityUsed + usedDelta),
-      quantityAdded: delta > 0 ? item.quantityAdded + delta : item.quantityAdded,
-    });
-    if (next <= 0.25 * (item.quantityAdded + (delta > 0 ? delta : 0))) {
-      await push(ref(db, "notifications"), {
-        itemId: item.id, itemName: item.name, remaining: next,
-        threshold: Math.floor(0.25 * item.quantityAdded),
-        createdAt: Date.now(), read: false,
-      });
-    }
-  };
+  const [adjusting, setAdjusting] = useState<Item | null>(null);
 
   const onDelete = async (id: string) => {
     if (!confirm("Delete this item?")) return;
@@ -57,7 +41,7 @@ export default function Items() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Items</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gradient">Items</h1>
           <p className="text-muted-foreground">Inventory items, categories, and stock movements.</p>
         </div>
       </div>
@@ -122,8 +106,7 @@ export default function Items() {
                             <td className="px-2 py-3"><Badge variant={low ? "destructive" : "secondary"}>{i.remaining}</Badge></td>
                             <td className="px-2 py-3">
                               <div className="flex justify-end gap-1">
-                                <Button size="icon" variant="ghost" onClick={() => adjustStock(i, 1)} aria-label="Add"><Plus className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost" onClick={() => adjustStock(i, -1)} aria-label="Remove"><Minus className="h-4 w-4" /></Button>
+                                <Button size="icon" variant="ghost" onClick={() => setAdjusting(i)} aria-label="Adjust stock"><PackagePlus className="h-4 w-4 text-primary" /></Button>
                                 <Button size="icon" variant="ghost" onClick={() => { setEditing(i); setOpen(true); }} aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
                                 <Button size="icon" variant="ghost" onClick={() => onDelete(i.id)} aria-label="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                               </div>
@@ -147,7 +130,82 @@ export default function Items() {
           <CategoriesTab createdBy={user?.uid ?? "unknown"} />
         </TabsContent>
       </Tabs>
+
+      <AdjustStockDialog item={adjusting} onClose={() => setAdjusting(null)} />
     </div>
+  );
+}
+
+function AdjustStockDialog({ item, onClose }: { item: Item | null; onClose: () => void }) {
+  const [mode, setMode] = useState<"in" | "out">("in");
+  const [qty, setQty] = useState("1");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item) return;
+    const n = Number(qty);
+    if (!Number.isFinite(n) || n <= 0) return toast.error("Enter a positive quantity");
+    if (mode === "out" && n > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
+
+    if (mode === "in") {
+      await update(ref(db, `items/${item.id}`), {
+        remaining: item.remaining + n,
+        quantityAdded: item.quantityAdded + n,
+      });
+      toast.success(`Stocked in +${n} ${item.unitType}`);
+    } else {
+      const next = item.remaining - n;
+      await update(ref(db, `items/${item.id}`), {
+        remaining: next,
+        quantityUsed: item.quantityUsed + n,
+      });
+      if (next <= 0.25 * item.quantityAdded) {
+        await push(ref(db, "notifications"), {
+          itemId: item.id, itemName: item.name, remaining: next,
+          threshold: Math.floor(0.25 * item.quantityAdded),
+          createdAt: Date.now(), read: false,
+        });
+      }
+      toast.success(`Removed −${n} ${item.unitType}`);
+    }
+    setQty("1");
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!item} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Adjust stock {item ? `— ${item.name}` : ""}</DialogTitle>
+        </DialogHeader>
+        {item && (
+          <form onSubmit={submit} className="space-y-3">
+            <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Current remaining</span><span className="font-semibold">{item.remaining} {item.unitType}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total added</span><span>{item.quantityAdded}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total used</span><span>{item.quantityUsed}</span></div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant={mode === "in" ? "default" : "outline"} onClick={() => setMode("in")}>
+                <Plus className="mr-2 h-4 w-4" />Stock in
+              </Button>
+              <Button type="button" variant={mode === "out" ? "default" : "outline"} onClick={() => setMode("out")}>
+                <Minus className="mr-2 h-4 w-4" />Stock out
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <Label>Quantity ({item.unitType})</Label>
+              <Input type="number" min={1} step="any" value={qty} onChange={(e) => setQty(e.target.value)} autoFocus />
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full">
+                {mode === "in" ? `Add +${qty || 0}` : `Remove −${qty || 0}`}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -239,6 +297,7 @@ function ItemDialog({
 
 function MovementTab({ items, movements, userId }: { items: Item[]; movements: StockMovement[]; userId: string }) {
   const [itemId, setItemId] = useState("");
+  const [mode, setMode] = useState<"in" | "out">("out");
   const [quantity, setQuantity] = useState("1");
   const [takenBy, setTakenBy] = useState("");
   const [newPerson, setNewPerson] = useState("");
@@ -257,36 +316,57 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
     if (!item) return toast.error("Pick an item");
     const qty = Number(quantity);
     if (qty <= 0) return toast.error("Quantity must be > 0");
-    if (qty > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
-    const finalTakenBy = (adding ? newPerson : takenBy).trim();
-    if (!finalTakenBy) return toast.error("Specify who took it");
 
-    const next = item.remaining - qty;
-    await update(ref(db, `items/${item.id}`), {
-      remaining: next, quantityUsed: item.quantityUsed + qty,
-    });
-    const r = push(ref(db, "stock_movements"));
-    await set(r, nullify({
-      itemId: item.id, quantity: qty, takenBy: finalTakenBy, notes,
-      createdAt: Date.now(), createdBy: userId,
-    }));
-    if (next <= 0.25 * item.quantityAdded) {
-      await push(ref(db, "notifications"), {
-        itemId: item.id, itemName: item.name, remaining: next,
-        threshold: Math.floor(0.25 * item.quantityAdded),
-        createdAt: Date.now(), read: false,
+    if (mode === "out") {
+      if (qty > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
+      const finalTakenBy = (adding ? newPerson : takenBy).trim();
+      if (!finalTakenBy) return toast.error("Specify who took it");
+      const next = item.remaining - qty;
+      await update(ref(db, `items/${item.id}`), {
+        remaining: next, quantityUsed: item.quantityUsed + qty,
       });
+      const r = push(ref(db, "stock_movements"));
+      await set(r, nullify({
+        itemId: item.id, quantity: qty, takenBy: finalTakenBy, notes,
+        createdAt: Date.now(), createdBy: userId,
+      }));
+      if (next <= 0.25 * item.quantityAdded) {
+        await push(ref(db, "notifications"), {
+          itemId: item.id, itemName: item.name, remaining: next,
+          threshold: Math.floor(0.25 * item.quantityAdded),
+          createdAt: Date.now(), read: false,
+        });
+      }
+      toast.success(`Stock out −${qty} ${item.unitType}`);
+    } else {
+      await update(ref(db, `items/${item.id}`), {
+        remaining: item.remaining + qty,
+        quantityAdded: item.quantityAdded + qty,
+      });
+      const r = push(ref(db, "stock_movements"));
+      await set(r, nullify({
+        itemId: item.id, quantity: qty, takenBy: `+ Restock${notes ? `: ${notes}` : ""}`, notes,
+        createdAt: Date.now(), createdBy: userId,
+      }));
+      toast.success(`Stock in +${qty} ${item.unitType}`);
     }
-    toast.success("Movement recorded");
     setQuantity("1"); setNotes(""); setNewPerson(""); setAdding(false);
   };
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
-        <CardHeader><CardTitle>Record stock-out</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Record stock movement</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant={mode === "in" ? "default" : "outline"} onClick={() => setMode("in")}>
+                <Plus className="mr-2 h-4 w-4" />Stock in
+              </Button>
+              <Button type="button" variant={mode === "out" ? "default" : "outline"} onClick={() => setMode("out")}>
+                <Minus className="mr-2 h-4 w-4" />Stock out
+              </Button>
+            </div>
             <div className="space-y-2">
               <Label>Item</Label>
               <Select value={itemId} onValueChange={setItemId}>
@@ -302,7 +382,7 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
               <Label>Quantity</Label>
               <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
             </div>
-            <div className="space-y-2">
+            {mode === "out" && <div className="space-y-2">
               <Label>Taken by</Label>
               {adding ? (
                 <div className="flex gap-2">
@@ -320,9 +400,11 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
                   <Button type="button" variant="outline" onClick={() => setAdding(true)}>+ New</Button>
                 </div>
               )}
-            </div>
+            </div>}
             <div className="space-y-2"><Label>Notes</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-            <Button type="submit" className="w-full">Record movement</Button>
+            <Button type="submit" className="w-full">
+              {mode === "in" ? "Add stock" : "Record stock-out"}
+            </Button>
           </form>
         </CardContent>
       </Card>

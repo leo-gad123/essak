@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Pencil, Save, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Save, X, Download } from "lucide-react";
 import { toast } from "sonner";
+import { generateSuppliersReport } from "@/lib/pdf";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
@@ -23,13 +24,25 @@ export default function Suppliers() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Suppliers</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gradient">Suppliers</h1>
           <p className="text-muted-foreground">Directory of vendors and suppliers.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />New supplier</Button></DialogTrigger>
-          <SupplierForm onClose={() => setOpen(false)} />
-        </Dialog>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            disabled={data.length === 0}
+            onClick={() => {
+              generateSuppliersReport(data);
+              toast.success("Suppliers PDF downloaded");
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />Download PDF
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />New supplier</Button></DialogTrigger>
+            <SupplierForm onClose={() => setOpen(false)} />
+          </Dialog>
+        </div>
       </div>
 
       <Card>
