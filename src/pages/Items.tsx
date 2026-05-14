@@ -130,7 +130,82 @@ export default function Items() {
           <CategoriesTab createdBy={user?.uid ?? "unknown"} />
         </TabsContent>
       </Tabs>
+
+      <AdjustStockDialog item={adjusting} onClose={() => setAdjusting(null)} />
     </div>
+  );
+}
+
+function AdjustStockDialog({ item, onClose }: { item: Item | null; onClose: () => void }) {
+  const [mode, setMode] = useState<"in" | "out">("in");
+  const [qty, setQty] = useState("1");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item) return;
+    const n = Number(qty);
+    if (!Number.isFinite(n) || n <= 0) return toast.error("Enter a positive quantity");
+    if (mode === "out" && n > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
+
+    if (mode === "in") {
+      await update(ref(db, `items/${item.id}`), {
+        remaining: item.remaining + n,
+        quantityAdded: item.quantityAdded + n,
+      });
+      toast.success(`Stocked in +${n} ${item.unitType}`);
+    } else {
+      const next = item.remaining - n;
+      await update(ref(db, `items/${item.id}`), {
+        remaining: next,
+        quantityUsed: item.quantityUsed + n,
+      });
+      if (next <= 0.25 * item.quantityAdded) {
+        await push(ref(db, "notifications"), {
+          itemId: item.id, itemName: item.name, remaining: next,
+          threshold: Math.floor(0.25 * item.quantityAdded),
+          createdAt: Date.now(), read: false,
+        });
+      }
+      toast.success(`Removed −${n} ${item.unitType}`);
+    }
+    setQty("1");
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!item} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Adjust stock {item ? `— ${item.name}` : ""}</DialogTitle>
+        </DialogHeader>
+        {item && (
+          <form onSubmit={submit} className="space-y-3">
+            <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Current remaining</span><span className="font-semibold">{item.remaining} {item.unitType}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total added</span><span>{item.quantityAdded}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total used</span><span>{item.quantityUsed}</span></div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant={mode === "in" ? "default" : "outline"} onClick={() => setMode("in")}>
+                <Plus className="mr-2 h-4 w-4" />Stock in
+              </Button>
+              <Button type="button" variant={mode === "out" ? "default" : "outline"} onClick={() => setMode("out")}>
+                <Minus className="mr-2 h-4 w-4" />Stock out
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <Label>Quantity ({item.unitType})</Label>
+              <Input type="number" min={1} step="any" value={qty} onChange={(e) => setQty(e.target.value)} autoFocus />
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full">
+                {mode === "in" ? `Add +${qty || 0}` : `Remove −${qty || 0}`}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
