@@ -297,6 +297,7 @@ function ItemDialog({
 
 function MovementTab({ items, movements, userId }: { items: Item[]; movements: StockMovement[]; userId: string }) {
   const [itemId, setItemId] = useState("");
+  const [mode, setMode] = useState<"in" | "out">("out");
   const [quantity, setQuantity] = useState("1");
   const [takenBy, setTakenBy] = useState("");
   const [newPerson, setNewPerson] = useState("");
@@ -315,36 +316,57 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
     if (!item) return toast.error("Pick an item");
     const qty = Number(quantity);
     if (qty <= 0) return toast.error("Quantity must be > 0");
-    if (qty > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
-    const finalTakenBy = (adding ? newPerson : takenBy).trim();
-    if (!finalTakenBy) return toast.error("Specify who took it");
 
-    const next = item.remaining - qty;
-    await update(ref(db, `items/${item.id}`), {
-      remaining: next, quantityUsed: item.quantityUsed + qty,
-    });
-    const r = push(ref(db, "stock_movements"));
-    await set(r, nullify({
-      itemId: item.id, quantity: qty, takenBy: finalTakenBy, notes,
-      createdAt: Date.now(), createdBy: userId,
-    }));
-    if (next <= 0.25 * item.quantityAdded) {
-      await push(ref(db, "notifications"), {
-        itemId: item.id, itemName: item.name, remaining: next,
-        threshold: Math.floor(0.25 * item.quantityAdded),
-        createdAt: Date.now(), read: false,
+    if (mode === "out") {
+      if (qty > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
+      const finalTakenBy = (adding ? newPerson : takenBy).trim();
+      if (!finalTakenBy) return toast.error("Specify who took it");
+      const next = item.remaining - qty;
+      await update(ref(db, `items/${item.id}`), {
+        remaining: next, quantityUsed: item.quantityUsed + qty,
       });
+      const r = push(ref(db, "stock_movements"));
+      await set(r, nullify({
+        itemId: item.id, quantity: qty, takenBy: finalTakenBy, notes,
+        createdAt: Date.now(), createdBy: userId,
+      }));
+      if (next <= 0.25 * item.quantityAdded) {
+        await push(ref(db, "notifications"), {
+          itemId: item.id, itemName: item.name, remaining: next,
+          threshold: Math.floor(0.25 * item.quantityAdded),
+          createdAt: Date.now(), read: false,
+        });
+      }
+      toast.success(`Stock out −${qty} ${item.unitType}`);
+    } else {
+      await update(ref(db, `items/${item.id}`), {
+        remaining: item.remaining + qty,
+        quantityAdded: item.quantityAdded + qty,
+      });
+      const r = push(ref(db, "stock_movements"));
+      await set(r, nullify({
+        itemId: item.id, quantity: qty, takenBy: `+ Restock${notes ? `: ${notes}` : ""}`, notes,
+        createdAt: Date.now(), createdBy: userId,
+      }));
+      toast.success(`Stock in +${qty} ${item.unitType}`);
     }
-    toast.success("Movement recorded");
     setQuantity("1"); setNotes(""); setNewPerson(""); setAdding(false);
   };
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
-        <CardHeader><CardTitle>Record stock-out</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Record stock movement</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant={mode === "in" ? "default" : "outline"} onClick={() => setMode("in")}>
+                <Plus className="mr-2 h-4 w-4" />Stock in
+              </Button>
+              <Button type="button" variant={mode === "out" ? "default" : "outline"} onClick={() => setMode("out")}>
+                <Minus className="mr-2 h-4 w-4" />Stock out
+              </Button>
+            </div>
             <div className="space-y-2">
               <Label>Item</Label>
               <Select value={itemId} onValueChange={setItemId}>
@@ -360,7 +382,7 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
               <Label>Quantity</Label>
               <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
             </div>
-            <div className="space-y-2">
+            {mode === "out" && <div className="space-y-2">
               <Label>Taken by</Label>
               {adding ? (
                 <div className="flex gap-2">
@@ -378,9 +400,11 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
                   <Button type="button" variant="outline" onClick={() => setAdding(true)}>+ New</Button>
                 </div>
               )}
-            </div>
+            </div>}
             <div className="space-y-2"><Label>Notes</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-            <Button type="submit" className="w-full">Record movement</Button>
+            <Button type="submit" className="w-full">
+              {mode === "in" ? "Add stock" : "Record stock-out"}
+            </Button>
           </form>
         </CardContent>
       </Card>
