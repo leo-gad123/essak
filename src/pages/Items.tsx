@@ -41,7 +41,7 @@ export default function Items() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Items</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gradient">Items</h1>
           <p className="text-muted-foreground">Inventory items, categories, and stock movements.</p>
         </div>
       </div>

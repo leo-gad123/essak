@@ -67,7 +67,7 @@ export default function Users() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gradient">Users</h1>
         <p className="text-muted-foreground">Manage team access and personal settings.</p>
       </div>
 
