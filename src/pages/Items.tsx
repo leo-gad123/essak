@@ -16,7 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Minus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Minus, Pencil, Trash2, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -29,23 +29,7 @@ export default function Items() {
 
   const [editing, setEditing] = useState<Item | null>(null);
   const [open, setOpen] = useState(false);
-
-  const adjustStock = async (item: Item, delta: number) => {
-    const next = Math.max(0, item.remaining + delta);
-    const usedDelta = item.remaining - next;
-    await update(ref(db, `items/${item.id}`), {
-      remaining: next,
-      quantityUsed: Math.max(0, item.quantityUsed + usedDelta),
-      quantityAdded: delta > 0 ? item.quantityAdded + delta : item.quantityAdded,
-    });
-    if (next <= 0.25 * (item.quantityAdded + (delta > 0 ? delta : 0))) {
-      await push(ref(db, "notifications"), {
-        itemId: item.id, itemName: item.name, remaining: next,
-        threshold: Math.floor(0.25 * item.quantityAdded),
-        createdAt: Date.now(), read: false,
-      });
-    }
-  };
+  const [adjusting, setAdjusting] = useState<Item | null>(null);
 
   const onDelete = async (id: string) => {
     if (!confirm("Delete this item?")) return;
