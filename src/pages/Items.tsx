@@ -106,8 +106,7 @@ export default function Items() {
                             <td className="px-2 py-3"><Badge variant={low ? "destructive" : "secondary"}>{i.remaining}</Badge></td>
                             <td className="px-2 py-3">
                               <div className="flex justify-end gap-1">
-                                <Button size="icon" variant="ghost" onClick={() => adjustStock(i, 1)} aria-label="Add"><Plus className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost" onClick={() => adjustStock(i, -1)} aria-label="Remove"><Minus className="h-4 w-4" /></Button>
+                                <Button size="icon" variant="ghost" onClick={() => setAdjusting(i)} aria-label="Adjust stock"><PackagePlus className="h-4 w-4 text-primary" /></Button>
                                 <Button size="icon" variant="ghost" onClick={() => { setEditing(i); setOpen(true); }} aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
                                 <Button size="icon" variant="ghost" onClick={() => onDelete(i.id)} aria-label="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                               </div>
