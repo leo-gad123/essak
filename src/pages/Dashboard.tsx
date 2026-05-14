@@ -25,7 +25,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gradient">Dashboard</h1>
         <p className="text-muted-foreground">Overview of your inventory and recent activity.</p>
       </div>
 
@@ -110,14 +110,17 @@ function StatCard({
 }: {
   icon: React.ReactNode; label: string; value: number; accent?: "warning";
 }) {
+  const tone = accent === "warning"
+    ? "gradient-warm text-white"
+    : "gradient-primary text-primary-foreground";
   return (
-    <Card className={`hover-lift ${accent === "warning" ? "border-warning/40 bg-warning/5" : ""}`}>
+    <Card className={`hover-lift overflow-hidden border-0 shadow-elegant ${tone}`}>
       <CardContent className="p-5">
-        <div className="flex items-center justify-between text-muted-foreground">
-          <span className="text-sm">{label}</span>
-          {icon}
+        <div className="flex items-center justify-between opacity-90">
+          <span className="text-sm font-medium">{label}</span>
+          <span className="rounded-md bg-white/15 p-1.5">{icon}</span>
         </div>
-        <div className="mt-2 text-3xl font-semibold tracking-tight">{value}</div>
+        <div className="mt-2 text-3xl font-bold tracking-tight">{value}</div>
       </CardContent>
     </Card>
   );
