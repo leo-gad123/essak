@@ -449,13 +449,37 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
             <div className="divide-y divide-border">
               {[...movements].sort((a, b) => b.createdAt - a.createdAt).slice(0, 12).map((m) => {
                 const item = items.find((i) => i.id === m.itemId);
+                const isIn = m.takenBy?.startsWith("+ Restock");
+                const onDeleteMovement = async () => {
+                  if (!confirm("Delete this stock movement? This will reverse its effect on the item.")) return;
+                  if (item) {
+                    if (isIn) {
+                      await update(ref(db, `items/${item.id}`), {
+                        remaining: Math.max(0, item.remaining - m.quantity),
+                        quantityAdded: Math.max(0, item.quantityAdded - m.quantity),
+                      });
+                    } else {
+                      await update(ref(db, `items/${item.id}`), {
+                        remaining: item.remaining + m.quantity,
+                        quantityUsed: Math.max(0, item.quantityUsed - m.quantity),
+                      });
+                    }
+                  }
+                  await remove(ref(db, `stock_movements/${m.id}`));
+                  toast.success("Movement deleted");
+                };
                 return (
                   <div key={m.id} className="flex items-center justify-between py-3 text-sm">
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium">{item?.name ?? "—"}</p>
                       <p className="text-xs text-muted-foreground">{m.takenBy} · {format(m.createdAt, "PP p")}</p>
                     </div>
-                    <Badge variant="secondary">−{m.quantity}</Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="secondary">{isIn ? "+" : "−"}{m.quantity}</Badge>
+                      <Button size="icon" variant="ghost" onClick={onDeleteMovement} aria-label="Delete movement">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
