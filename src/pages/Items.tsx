@@ -74,7 +74,8 @@ export default function Items() {
               {items.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">No items yet.</p>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-muted-foreground">
@@ -117,6 +118,35 @@ export default function Items() {
                     </tbody>
                   </table>
                 </div>
+                <div className="md:hidden space-y-3">
+                  {items.map((i) => {
+                    const low = i.remaining <= 0.25 * i.quantityAdded;
+                    return (
+                      <div key={i.id} className="rounded-lg border border-border bg-card p-3 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate">{i.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {categories.find((c) => c.id === i.categoryId)?.name ?? "—"} · {suppliers.find((s) => s.id === i.supplierId)?.name ?? "—"}
+                            </p>
+                          </div>
+                          <Badge variant={low ? "destructive" : "secondary"}>{i.remaining} {i.unitType}</Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div><span className="text-muted-foreground">Added</span><p className="font-medium">{i.quantityAdded}</p></div>
+                          <div><span className="text-muted-foreground">Used</span><p className="font-medium">{i.quantityUsed}</p></div>
+                          <div><span className="text-muted-foreground">Unit</span><p className="font-medium">{i.unitType}</p></div>
+                        </div>
+                        <div className="flex justify-end gap-1 pt-1 border-t border-border">
+                          <Button size="sm" variant="ghost" onClick={() => setAdjusting(i)}><PackagePlus className="h-4 w-4 mr-1 text-primary" />Adjust</Button>
+                          <Button size="icon" variant="ghost" onClick={() => { setEditing(i); setOpen(true); }} aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => onDelete(i.id)} aria-label="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -248,7 +278,7 @@ function ItemDialog({
   return (
     <DialogContent>
       <DialogHeader><DialogTitle>{item ? "Edit item" : "New item"}</DialogTitle></DialogHeader>
-      <form onSubmit={onSubmit} className="space-y-3">
+      <form onSubmit={onSubmit} className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
         <div className="space-y-2"><Label>Name</Label><Input required value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-2">
@@ -289,7 +319,9 @@ function ItemDialog({
         </div>
         <div className="space-y-2"><Label>Size (optional)</Label><Input value={size} onChange={(e) => setSize(e.target.value)} /></div>
         <div className="space-y-2"><Label>Notes (optional)</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-        <DialogFooter><Button type="submit">{item ? "Save" : "Create"}</Button></DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button type="submit" className="w-full sm:w-auto">{item ? "Save" : "Create"}</Button>
+        </DialogFooter>
       </form>
     </DialogContent>
   );
@@ -390,14 +422,14 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
                   <Button type="button" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
                 </div>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Select value={takenBy} onValueChange={setTakenBy}>
                     <SelectTrigger><SelectValue placeholder="Select person" /></SelectTrigger>
                     <SelectContent>
                       {peopleNames.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Button type="button" variant="outline" onClick={() => setAdding(true)}>+ New</Button>
+                  <Button type="button" variant="outline" onClick={() => setAdding(true)} className="sm:w-auto">+ New</Button>
                 </div>
               )}
             </div>}
@@ -453,9 +485,9 @@ function CategoriesTab({ createdBy }: { createdBy: string }) {
       <Card>
         <CardHeader><CardTitle>Add category</CardTitle></CardHeader>
         <CardContent>
-          <form onSubmit={onAdd} className="flex gap-2">
+          <form onSubmit={onAdd} className="flex flex-col sm:flex-row gap-2">
             <Input placeholder="Category name" value={name} onChange={(e) => setName(e.target.value)} />
-            <Button type="submit"><Plus className="mr-2 h-4 w-4" />Add</Button>
+            <Button type="submit" className="sm:w-auto"><Plus className="mr-2 h-4 w-4" />Add</Button>
           </form>
         </CardContent>
       </Card>
