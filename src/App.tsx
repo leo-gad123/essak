@@ -10,6 +10,7 @@ import Items from "@/pages/Items";
 import Suppliers from "@/pages/Suppliers";
 import Reports from "@/pages/Reports";
 import Users from "@/pages/Users";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import type { ReactNode } from "react";
 
@@ -53,6 +54,14 @@ export default function App() {
                 element={
                   <Protected adminOnly>
                     <Users />
+                  </Protected>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <Protected adminOnly>
+                    <Settings />
                   </Protected>
                 }
               />

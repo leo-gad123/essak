@@ -7,6 +7,7 @@ import {
   Users,
   LogOut,
   Boxes,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -76,6 +77,14 @@ export function AppSidebar() {
                     <Link to="/users">
                       <Users />
                       <span>Users</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/settings")}>
+                    <Link to="/settings">
+                      <SettingsIcon />
+                      <span>Settings</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
