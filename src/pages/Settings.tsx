@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { ref, onValue, update, remove } from "firebase/database";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateEmail,
+  updatePassword,
+} from "firebase/auth";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtimeList } from "@/lib/db/hooks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Save, Trash2, ShieldAlert, Bell } from "lucide-react";
+import { Save, Trash2, ShieldAlert, Bell, KeyRound, Mail } from "lucide-react";
 import type { Item, StockMovement, Notification } from "@/lib/db/types";
 
 interface AppSettings {
@@ -75,6 +81,71 @@ export default function Settings() {
     if (!confirm("Delete ALL stock movement history? Item quantities will not change.")) return;
     await remove(ref(db, "stock_movements"));
     toast.success("Movement history cleared");
+  };
+
+  return <SettingsView
+    settings={settings} setSettings={setSettings} saving={saving} onSave={onSave}
+    items={items} movements={movements} notifications={notifications}
+    clearNotifications={clearNotifications} clearMovements={clearMovements}
+    uid={user.uid}
+  />;
+}
+
+function SettingsView({
+  settings, setSettings, saving, onSave, items, movements, notifications,
+  clearNotifications, clearMovements, uid,
+}: {
+  settings: AppSettings; setSettings: (s: AppSettings) => void; saving: boolean; onSave: () => void;
+  items: Item[]; movements: StockMovement[]; notifications: Notification[];
+  clearNotifications: () => void; clearMovements: () => void; uid: string;
+}) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [updatingEmail, setUpdatingEmail] = useState(false);
+  const [updatingPwd, setUpdatingPwd] = useState(false);
+
+  const reauth = async () => {
+    const u = auth.currentUser;
+    if (!u || !u.email) throw new Error("Not signed in");
+    if (!currentPassword) throw new Error("Enter your current password");
+    const cred = EmailAuthProvider.credential(u.email, currentPassword);
+    await reauthenticateWithCredential(u, cred);
+  };
+
+  const onUpdateEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail) return toast.error("Enter a new email");
+    setUpdatingEmail(true);
+    try {
+      await reauth();
+      await updateEmail(auth.currentUser!, newEmail);
+      await update(ref(db, `users/${uid}`), { email: newEmail });
+      toast.success("Email updated");
+      setNewEmail(""); setCurrentPassword("");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUpdatingEmail(false);
+    }
+  };
+
+  const onUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) return toast.error("Password must be at least 6 characters");
+    if (newPassword !== confirmPassword) return toast.error("Passwords do not match");
+    setUpdatingPwd(true);
+    try {
+      await reauth();
+      await updatePassword(auth.currentUser!, newPassword);
+      toast.success("Password updated");
+      setNewPassword(""); setConfirmPassword(""); setCurrentPassword("");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUpdatingPwd(false);
+    }
   };
 
   return (
@@ -160,6 +231,54 @@ export default function Settings() {
               <span className="text-sm">Notifications</span>
               <Badge variant="secondary">{notifications.length}</Badge>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-lift">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Mail className="h-4 w-4" /> Change email</CardTitle>
+            <CardDescription>Update the email used to sign in.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onUpdateEmail} className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="newEmail">New email</Label>
+                <Input id="newEmail" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="curPwdEmail">Current password</Label>
+                <Input id="curPwdEmail" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+              </div>
+              <Button type="submit" disabled={updatingEmail}>
+                {updatingEmail ? "Updating…" : "Update email"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-lift">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><KeyRound className="h-4 w-4" /> Change password</CardTitle>
+            <CardDescription>Set a new password for your admin account.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onUpdatePassword} className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="curPwd">Current password</Label>
+                <Input id="curPwd" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPwd">New password</Label>
+                <Input id="newPwd" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPwd">Confirm new password</Label>
+                <Input id="confirmPwd" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              </div>
+              <Button type="submit" disabled={updatingPwd}>
+                {updatingPwd ? "Updating…" : "Update password"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 
