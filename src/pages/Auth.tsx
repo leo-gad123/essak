@@ -8,7 +8,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Boxes } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export default function Auth() {
   const { signIn, user } = useAuth();
@@ -36,10 +36,8 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted px-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Boxes className="h-6 w-6" />
-          </div>
-          <CardTitle className="text-2xl">StockNova</CardTitle>
+          <img src={logo} alt="ESSA" className="mx-auto mb-3 h-16 w-auto" />
+          <CardTitle className="text-2xl">ESSA</CardTitle>
           <CardDescription>Inventory & stock management</CardDescription>
         </CardHeader>
         <CardContent>

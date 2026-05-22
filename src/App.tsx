@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import { Toaster } from "@/components/ui/sonner";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "@/pages/Index";
@@ -33,8 +34,9 @@ function Protected({ children, adminOnly }: { children: ReactNode; adminOnly?: b
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -68,9 +70,10 @@ export default function App() {
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <Toaster />
-        </AuthProvider>
-      </BrowserRouter>
+            <Toaster />
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

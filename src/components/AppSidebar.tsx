@@ -6,9 +6,9 @@ import {
   FileBarChart,
   Users,
   LogOut,
-  Boxes,
   Settings as SettingsIcon,
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -40,11 +40,9 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <Link to="/dashboard" className="flex items-center gap-2 px-2 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <Boxes className="h-5 w-5" />
-          </div>
+          <img src={logo} alt="ESSA" className="h-10 w-auto" />
           <div className="flex flex-col">
-            <span className="text-base font-semibold tracking-tight text-sidebar-foreground">StockNova</span>
+            <span className="text-base font-semibold tracking-tight text-sidebar-foreground">ESSA</span>
             <span className="text-xs text-sidebar-foreground/60">Inventory control</span>
           </div>
         </Link>
