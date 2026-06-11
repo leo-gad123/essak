@@ -1,0 +1,16 @@
+name = "stocknova"
+compatibility_date = "2025-10-01"
+type = "javascript"
+
+# Optional: add your Cloudflare account ID here if you want to publish with Wrangler.
+# account_id = "your-account-id"
+# Optional: If you use Cloudflare Pages, supply a project name below.
+project_name = "stocknova"
+
+# Build command to generate the static frontend.
+[build]
+command = "npm run build"
+
+# Deploy the generated static site from dist.
+[site]
+bucket = "./dist"
