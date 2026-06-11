@@ -419,6 +419,7 @@ function MovementTab({ items, movements, userId, onChange }: { items: Item[]; mo
         }));
         toast.success(`Stock in +${qty} ${item.unitType}`);
       }
+      await onChange();
       // Reset form
       setItemId(""); setQuantity("1"); setTakenBy(""); setNotes("");
     } catch (error) {
