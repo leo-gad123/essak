@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recha
 
 export default function Dashboard() {
   const { data: items } = useRealtimeList<Item>("items");
-  const { data: movements } = useRealtimeList<StockMovement>("stock_movements");
+  const { data: movements } = useRealtimeList<StockMovement>("stock-movements");
   const { data: notifs } = useRealtimeList<Notification>("notifications");
 
   const lowStock = items.filter((i) => i.remaining <= 0.25 * i.quantityAdded);

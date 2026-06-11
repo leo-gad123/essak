@@ -1,14 +1,9 @@
 import { useEffect, useState } from "react";
-import { ref, onValue, update, remove } from "firebase/database";
-import { db, auth } from "@/lib/firebase";
-import {
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updateEmail,
-  updatePassword,
-} from "firebase/auth";
+import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updatePassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtimeList } from "@/lib/db/hooks";
+import { api } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,15 +33,20 @@ export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULTS);
   const [saving, setSaving] = useState(false);
   const { data: items } = useRealtimeList<Item>("items");
-  const { data: movements } = useRealtimeList<StockMovement>("stock_movements");
-  const { data: notifications } = useRealtimeList<Notification>("notifications");
+  const { data: movements, refetch: refetchMovements } = useRealtimeList<StockMovement>("stock-movements");
+  const { data: notifications, refetch: refetchNotifications } = useRealtimeList<Notification>("notifications");
 
   useEffect(() => {
-    const r = ref(db, "settings/app");
-    return onValue(r, (snap) => {
-      const v = snap.val() as Partial<AppSettings> | null;
-      if (v) setSettings({ ...DEFAULTS, ...v });
-    });
+    const loadSettings = async () => {
+      try {
+        const savedSettings = await api.settings.get();
+        setSettings({ ...DEFAULTS, ...savedSettings });
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+        setSettings(DEFAULTS);
+      }
+    };
+    loadSettings();
   }, []);
 
   if (user?.role !== "admin") {
@@ -62,7 +62,7 @@ export default function Settings() {
   const onSave = async () => {
     setSaving(true);
     try {
-      await update(ref(db, "settings/app"), settings);
+      await api.settings.save(settings);
       toast.success("Settings saved");
     } catch (e) {
       toast.error((e as Error).message);
@@ -73,14 +73,30 @@ export default function Settings() {
 
   const clearNotifications = async () => {
     if (!confirm("Clear all notifications?")) return;
-    await remove(ref(db, "notifications"));
-    toast.success("Notifications cleared");
+    try {
+      const allNotifications = await api.notifications.getAll();
+      for (const notif of allNotifications) {
+        await api.notifications.delete(notif.id);
+      }
+      await refetchNotifications();
+      toast.success("Notifications cleared");
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   const clearMovements = async () => {
     if (!confirm("Delete ALL stock movement history? Item quantities will not change.")) return;
-    await remove(ref(db, "stock_movements"));
-    toast.success("Movement history cleared");
+    try {
+      const allMovements = await api.stockMovements.getAll();
+      for (const movement of allMovements) {
+        await api.stockMovements.delete(movement.id);
+      }
+      await refetchMovements();
+      toast.success("Movement history cleared");
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   return <SettingsView
@@ -121,7 +137,7 @@ function SettingsView({
     try {
       await reauth();
       await updateEmail(auth.currentUser!, newEmail);
-      await update(ref(db, `users/${uid}`), { email: newEmail });
+      await api.users.update(uid, { email: newEmail });
       toast.success("Email updated");
       setNewEmail(""); setCurrentPassword("");
     } catch (err) {

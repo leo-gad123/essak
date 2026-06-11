@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { ref, push, set, update, remove } from "firebase/database";
-import { db } from "@/lib/firebase";
 import { useRealtimeList } from "@/lib/db/hooks";
+import { api } from "@/lib/api-client";
 import { nullify, type Item, type Category, type Supplier, type StockMovement, type UnitType } from "@/lib/db/types";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,10 +21,10 @@ import { format } from "date-fns";
 
 export default function Items() {
   const { user } = useAuth();
-  const { data: items } = useRealtimeList<Item>("items");
-  const { data: categories } = useRealtimeList<Category>("categories");
-  const { data: suppliers } = useRealtimeList<Supplier>("suppliers");
-  const { data: movements } = useRealtimeList<StockMovement>("stock_movements");
+  const { data: items, refetch: refetchItems } = useRealtimeList<Item>("items");
+  const { data: categories, refetch: refetchCategories } = useRealtimeList<Category>("categories");
+  const { data: suppliers, refetch: refetchSuppliers } = useRealtimeList<Supplier>("suppliers");
+  const { data: movements, refetch: refetchMovements } = useRealtimeList<StockMovement>("stock-movements");
 
   const [editing, setEditing] = useState<Item | null>(null);
   const [open, setOpen] = useState(false);
@@ -33,8 +32,13 @@ export default function Items() {
 
   const onDelete = async (id: string) => {
     if (!confirm("Delete this item?")) return;
-    await remove(ref(db, `items/${id}`));
-    toast.success("Item deleted");
+    try {
+      await api.items.delete(id);
+      await refetchItems();
+      toast.success("Item deleted");
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   return (
@@ -64,6 +68,9 @@ export default function Items() {
                 categories={categories}
                 suppliers={suppliers}
                 onClose={() => { setOpen(false); setEditing(null); }}
+                onSaved={async () => {
+                  await refetchItems();
+                }}
                 createdBy={user?.uid ?? "unknown"}
               />
             </Dialog>
@@ -153,20 +160,41 @@ export default function Items() {
         </TabsContent>
 
         <TabsContent value="movement" className="pt-4">
-          <MovementTab items={items} movements={movements} userId={user?.uid ?? "unknown"} />
+          <MovementTab
+          items={items}
+          movements={movements}
+          userId={user?.uid ?? "unknown"}
+          onChange={async () => {
+            await refetchItems();
+            await refetchMovements();
+          }}
+        />
         </TabsContent>
 
         <TabsContent value="categories" className="pt-4">
-          <CategoriesTab createdBy={user?.uid ?? "unknown"} />
+          <CategoriesTab
+          createdBy={user?.uid ?? "unknown"}
+          onChanged={async () => {
+            await refetchCategories();
+            await refetchItems();
+          }}
+        />
         </TabsContent>
       </Tabs>
 
-      <AdjustStockDialog item={adjusting} onClose={() => setAdjusting(null)} />
+      <AdjustStockDialog
+        item={adjusting}
+        onClose={() => setAdjusting(null)}
+        onChange={async () => {
+          await refetchItems();
+          await refetchMovements();
+        }}
+      />
     </div>
   );
 }
 
-function AdjustStockDialog({ item, onClose }: { item: Item | null; onClose: () => void }) {
+function AdjustStockDialog({ item, onClose, onChange }: { item: Item | null; onClose: () => void; onChange: () => Promise<void> }) {
   const [mode, setMode] = useState<"in" | "out">("in");
   const [qty, setQty] = useState("1");
 
@@ -177,29 +205,35 @@ function AdjustStockDialog({ item, onClose }: { item: Item | null; onClose: () =
     if (!Number.isFinite(n) || n <= 0) return toast.error("Enter a positive quantity");
     if (mode === "out" && n > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
 
-    if (mode === "in") {
-      await update(ref(db, `items/${item.id}`), {
-        remaining: item.remaining + n,
-        quantityAdded: item.quantityAdded + n,
-      });
-      toast.success(`Stocked in +${n} ${item.unitType}`);
-    } else {
-      const next = item.remaining - n;
-      await update(ref(db, `items/${item.id}`), {
-        remaining: next,
-        quantityUsed: item.quantityUsed + n,
-      });
-      if (next <= 0.25 * item.quantityAdded) {
-        await push(ref(db, "notifications"), {
-          itemId: item.id, itemName: item.name, remaining: next,
-          threshold: Math.floor(0.25 * item.quantityAdded),
-          createdAt: Date.now(), read: false,
+    try {
+      if (mode === "in") {
+        await api.items.update(item.id, {
+          remaining: item.remaining + n,
+          quantityAdded: item.quantityAdded + n,
         });
+        toast.success(`Stocked in +${n} ${item.unitType}`);
+      } else {
+        const next = item.remaining - n;
+        await api.items.update(item.id, {
+          remaining: next,
+          quantityUsed: item.quantityUsed + n,
+        });
+        if (next <= 0.25 * item.quantityAdded) {
+          await api.notifications.create({
+            itemId: item.id, itemName: item.name, remaining: next,
+            threshold: Math.floor(0.25 * item.quantityAdded),
+            createdAt: Date.now(), read: false,
+          });
+        }
+        toast.success(`Removed −${n} ${item.unitType}`);
       }
-      toast.success(`Removed −${n} ${item.unitType}`);
+      await refetchItems();
+      await refetchMovements();
+      setQty("1");
+      onClose();
+    } catch (error) {
+      toast.error((error as Error).message);
     }
-    setQty("1");
-    onClose();
   };
 
   return (
@@ -240,9 +274,9 @@ function AdjustStockDialog({ item, onClose }: { item: Item | null; onClose: () =
 }
 
 function ItemDialog({
-  item, categories, suppliers, onClose, createdBy,
+  item, categories, suppliers, onClose, onSaved, createdBy,
 }: {
-  item: Item | null; categories: Category[]; suppliers: Supplier[]; onClose: () => void; createdBy: string;
+  item: Item | null; categories: Category[]; suppliers: Supplier[]; onClose: () => void; onSaved: () => Promise<void>; createdBy: string;
 }) {
   const [name, setName] = useState(item?.name ?? "");
   const [categoryId, setCategoryId] = useState<string>(item?.categoryId ?? "");
@@ -264,15 +298,19 @@ function ItemDialog({
       remaining: item ? item.remaining + (qty - item.quantityAdded) : qty,
       size, notes, createdBy,
     });
-    if (item) {
-      await update(ref(db, `items/${item.id}`), payload);
-      toast.success("Item updated");
-    } else {
-      const r = push(ref(db, "items"));
-      await set(r, payload);
-      toast.success("Item created");
+    try {
+      if (item) {
+        await api.items.update(item.id, payload);
+        toast.success("Item updated");
+      } else {
+        await api.items.create(payload);
+        toast.success("Item created");
+      }
+      await onSaved();
+      onClose();
+    } catch (error) {
+      toast.error((error as Error).message);
     }
-    onClose();
   };
 
   return (
@@ -327,7 +365,7 @@ function ItemDialog({
   );
 }
 
-function MovementTab({ items, movements, userId }: { items: Item[]; movements: StockMovement[]; userId: string }) {
+function MovementTab({ items, movements, userId, onChange }: { items: Item[]; movements: StockMovement[]; userId: string; onChange: () => Promise<void> }) {
   const [itemId, setItemId] = useState("");
   const [mode, setMode] = useState<"in" | "out">("out");
   const [quantity, setQuantity] = useState("1");
@@ -349,38 +387,42 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
     const qty = Number(quantity);
     if (qty <= 0) return toast.error("Quantity must be > 0");
 
-    if (mode === "out") {
-      if (qty > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
-      const finalTakenBy = (adding ? newPerson : takenBy).trim();
-      if (!finalTakenBy) return toast.error("Specify who took it");
-      const next = item.remaining - qty;
-      await update(ref(db, `items/${item.id}`), {
-        remaining: next, quantityUsed: item.quantityUsed + qty,
-      });
-      const r = push(ref(db, "stock_movements"));
-      await set(r, nullify({
-        itemId: item.id, quantity: qty, takenBy: finalTakenBy, notes,
-        createdAt: Date.now(), createdBy: userId,
-      }));
-      if (next <= 0.25 * item.quantityAdded) {
-        await push(ref(db, "notifications"), {
-          itemId: item.id, itemName: item.name, remaining: next,
-          threshold: Math.floor(0.25 * item.quantityAdded),
-          createdAt: Date.now(), read: false,
+    try {
+      if (mode === "out") {
+        if (qty > item.remaining) return toast.error(`Only ${item.remaining} ${item.unitType} available`);
+        const finalTakenBy = (adding ? newPerson : takenBy).trim();
+        if (!finalTakenBy) return toast.error("Specify who took it");
+        const next = item.remaining - qty;
+        await api.items.update(item.id, {
+          remaining: next, quantityUsed: item.quantityUsed + qty,
         });
+        await api.stockMovements.create(nullify({
+          itemId: item.id, quantity: qty, takenBy: finalTakenBy, notes,
+          createdAt: Date.now(), createdBy: userId,
+        }));
+        if (next <= 0.25 * item.quantityAdded) {
+          await api.notifications.create({
+            itemId: item.id, itemName: item.name, remaining: next,
+            threshold: Math.floor(0.25 * item.quantityAdded),
+            createdAt: Date.now(), read: false,
+          });
+        }
+        toast.success(`Stock out −${qty} ${item.unitType}`);
+      } else {
+        await api.items.update(item.id, {
+          remaining: item.remaining + qty,
+          quantityAdded: item.quantityAdded + qty,
+        });
+        await api.stockMovements.create(nullify({
+          itemId: item.id, quantity: qty, takenBy: `+ Restock${notes ? `: ${notes}` : ""}`, notes,
+          createdAt: Date.now(), createdBy: userId,
+        }));
+        toast.success(`Stock in +${qty} ${item.unitType}`);
       }
-      toast.success(`Stock out −${qty} ${item.unitType}`);
-    } else {
-      await update(ref(db, `items/${item.id}`), {
-        remaining: item.remaining + qty,
-        quantityAdded: item.quantityAdded + qty,
-      });
-      const r = push(ref(db, "stock_movements"));
-      await set(r, nullify({
-        itemId: item.id, quantity: qty, takenBy: `+ Restock${notes ? `: ${notes}` : ""}`, notes,
-        createdAt: Date.now(), createdBy: userId,
-      }));
-      toast.success(`Stock in +${qty} ${item.unitType}`);
+      // Reset form
+      setItemId(""); setQuantity("1"); setTakenBy(""); setNotes("");
+    } catch (error) {
+      toast.error((error as Error).message);
     }
     setQuantity("1"); setNotes(""); setNewPerson(""); setAdding(false);
   };
@@ -452,21 +494,26 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
                 const isIn = m.takenBy?.startsWith("+ Restock");
                 const onDeleteMovement = async () => {
                   if (!confirm("Delete this stock movement? This will reverse its effect on the item.")) return;
-                  if (item) {
-                    if (isIn) {
-                      await update(ref(db, `items/${item.id}`), {
-                        remaining: Math.max(0, item.remaining - m.quantity),
-                        quantityAdded: Math.max(0, item.quantityAdded - m.quantity),
-                      });
-                    } else {
-                      await update(ref(db, `items/${item.id}`), {
-                        remaining: item.remaining + m.quantity,
-                        quantityUsed: Math.max(0, item.quantityUsed - m.quantity),
-                      });
+                  try {
+                    if (item) {
+                      if (isIn) {
+                        await api.items.update(item.id, {
+                          remaining: Math.max(0, item.remaining - m.quantity),
+                          quantityAdded: Math.max(0, item.quantityAdded - m.quantity),
+                        });
+                      } else {
+                        await api.items.update(item.id, {
+                          remaining: item.remaining + m.quantity,
+                          quantityUsed: Math.max(0, item.quantityUsed - m.quantity),
+                        });
+                      }
                     }
+                    await api.stockMovements.delete(m.id);
+                    await onChange();
+                    toast.success("Movement deleted");
+                  } catch (error) {
+                    toast.error((error as Error).message);
                   }
-                  await remove(ref(db, `stock_movements/${m.id}`));
-                  toast.success("Movement deleted");
                 };
                 return (
                   <div key={m.id} className="flex items-center justify-between py-3 text-sm">
@@ -491,17 +538,22 @@ function MovementTab({ items, movements, userId }: { items: Item[]; movements: S
   );
 }
 
-function CategoriesTab({ createdBy }: { createdBy: string }) {
-  const { data } = useRealtimeList<Category>("categories");
+function CategoriesTab({ createdBy, onChanged }: { createdBy: string; onChanged: () => Promise<void> }) {
+  const { data, refetch } = useRealtimeList<Category>("categories");
   const [name, setName] = useState("");
 
   const onAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const r = push(ref(db, "categories"));
-    await set(r, { name: name.trim(), createdAt: Date.now(), createdBy });
-    setName("");
-    toast.success("Category added");
+    try {
+      await api.categories.create({ name: name.trim(), createdAt: Date.now(), createdBy });
+      setName("");
+      await refetch();
+      await onChanged();
+      toast.success("Category added");
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   return (
@@ -525,7 +577,16 @@ function CategoriesTab({ createdBy }: { createdBy: string }) {
               {data.map((c) => (
                 <div key={c.id} className="flex items-center justify-between py-3">
                   <span className="text-sm font-medium">{c.name}</span>
-                  <Button size="icon" variant="ghost" onClick={async () => { await remove(ref(db, `categories/${c.id}`)); toast.success("Removed"); }}>
+                  <Button size="icon" variant="ghost" onClick={async () => { 
+                    try {
+                      await api.categories.delete(c.id); 
+                      await refetch();
+                      await onChanged();
+                      toast.success("Removed"); 
+                    } catch (error) {
+                      toast.error((error as Error).message);
+                    }
+                  }}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>

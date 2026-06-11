@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { ref, set, onValue } from "firebase/database";
 import { createUserWithEmailAndPassword, signOut, getAuth } from "firebase/auth";
-import { db, getSecondaryApp } from "@/lib/firebase";
+import { getSecondaryApp } from "@/lib/firebase";
+import { api } from "@/lib/api-client";
 import { useRealtimeList } from "@/lib/db/hooks";
 import type { UserRecord } from "@/lib/db/types";
 import { useAuth } from "@/lib/auth-context";
@@ -19,7 +19,7 @@ import { Plus } from "lucide-react";
 
 export default function Users() {
   const { user } = useAuth();
-  const { data } = useRealtimeList<UserRecord & { id: string }>("users");
+  const { data, refetch } = useRealtimeList<UserRecord & { id: string }>("users");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -28,20 +28,14 @@ export default function Users() {
 
   const [days, setDays] = useState("30");
 
-  useEffect(() => {
-    if (!user) return;
-    const r = ref(db, `user_settings/${user.uid}`);
-    const unsub = onValue(r, (s) => {
-      const v = s.val() as { journalRangeDays?: number } | null;
-      if (v?.journalRangeDays) setDays(String(v.journalRangeDays));
-    });
-    return unsub;
-  }, [user]);
-
   const saveSettings = async () => {
     if (!user) return;
-    await set(ref(db, `user_settings/${user.uid}`), { journalRangeDays: Number(days) });
-    toast.success("Saved");
+    try {
+      await api.users.update(user.uid, { journalRangeDays: Number(days) });
+      toast.success("Saved");
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   const onCreate = async (e: React.FormEvent) => {
@@ -51,10 +45,11 @@ export default function Users() {
       const secondary = getSecondaryApp();
       const sAuth = getAuth(secondary);
       const cred = await createUserWithEmailAndPassword(sAuth, email, password);
-      await set(ref(db, `users/${cred.user.uid}`), {
+      await api.users.create({
         email, displayName: name, role, createdAt: Date.now(),
       });
       await signOut(sAuth);
+      await refetch();
       toast.success("User created");
       setEmail(""); setName(""); setPassword(""); setRole("standard");
     } catch (err) {

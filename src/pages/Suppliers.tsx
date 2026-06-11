@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { ref, push, set, remove, update } from "firebase/database";
-import { db } from "@/lib/firebase";
 import { useRealtimeList } from "@/lib/db/hooks";
+import { api } from "@/lib/api-client";
 import { nullify, type Supplier } from "@/lib/db/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function Suppliers() {
-  const { data } = useRealtimeList<Supplier>("suppliers");
+  const { data, refetch } = useRealtimeList<Supplier>("suppliers");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Supplier>>({});
@@ -40,7 +39,7 @@ export default function Suppliers() {
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />New supplier</Button></DialogTrigger>
-            <SupplierForm onClose={() => setOpen(false)} />
+            <SupplierForm onClose={() => setOpen(false)} onSaved={async () => { await refetch(); }} />
           </Dialog>
         </div>
       </div>
@@ -85,8 +84,14 @@ export default function Suppliers() {
                       {editing ? (
                         <>
                           <Button size="icon" variant="ghost" onClick={async () => {
-                            await update(ref(db, `suppliers/${s.id}`), nullify({ ...s, ...draft }));
-                            setEditingId(null); setDraft({}); toast.success("Updated");
+                            try {
+                              await api.suppliers.update(s.id, nullify({ ...s, ...draft }));
+                              setEditingId(null); setDraft({});
+                              await refetch();
+                              toast.success("Updated");
+                            } catch (error) {
+                              toast.error((error as Error).message);
+                            }
                           }}><Save className="h-4 w-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => { setEditingId(null); setDraft({}); }}>
                             <X className="h-4 w-4" />
@@ -99,7 +104,13 @@ export default function Suppliers() {
                           </Button>
                           <Button size="icon" variant="ghost" onClick={async () => {
                             if (!confirm("Delete supplier?")) return;
-                            await remove(ref(db, `suppliers/${s.id}`)); toast.success("Removed");
+                            try {
+                              await api.suppliers.delete(s.id);
+                              await refetch();
+                              toast.success("Removed");
+                            } catch (error) {
+                              toast.error((error as Error).message);
+                            }
                           }}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -117,7 +128,7 @@ export default function Suppliers() {
   );
 }
 
-function SupplierForm({ onClose }: { onClose: () => void }) {
+function SupplierForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => Promise<void> }) {
   const [name, setName] = useState("");
   const [supplies, setSupplies] = useState("");
   const [phone, setPhone] = useState("");
@@ -130,10 +141,14 @@ function SupplierForm({ onClose }: { onClose: () => void }) {
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          const r = push(ref(db, "suppliers"));
-          await set(r, nullify({ name, supplies, phone, email, address }));
-          toast.success("Supplier added");
-          onClose();
+          try {
+            await api.suppliers.create(nullify({ name, supplies, phone, email, address }));
+            await onSaved();
+            toast.success("Supplier added");
+            onClose();
+          } catch (error) {
+            toast.error((error as Error).message);
+          }
         }}
         className="space-y-3"
       >

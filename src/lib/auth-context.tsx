@@ -6,8 +6,8 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { ref, onValue, set, get } from "firebase/database";
-import { auth, db, isFirebaseConfigured } from "./firebase";
+import { auth, isFirebaseConfigured } from "./firebase";
+import { api } from "./api-client";
 
 export type Role = "admin" | "standard";
 
@@ -52,18 +52,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!firebaseUser || !isFirebaseConfigured) return;
-    const r = ref(db, `users/${firebaseUser.uid}`);
-    const unsub = onValue(r, (snap) => {
-      const v = snap.val() as { email?: string; role?: Role; displayName?: string } | null;
-      setUser({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: v?.displayName ?? firebaseUser.displayName ?? null,
-        role: v?.role ?? "standard",
-      });
+    const loadUserData = async () => {
+      try {
+        const users = await api.users.getAll();
+        const userRecord = users.find((u: any) => u.email === firebaseUser.email);
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: userRecord?.displayName ?? firebaseUser.displayName ?? null,
+          role: userRecord?.role ?? "standard",
+        });
+      } catch (error) {
+        console.error("Failed to load user data:", error);
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName ?? null,
+          role: "standard",
+        });
+      }
       setLoading(false);
-    });
-    return unsub;
+    };
+    loadUserData();
   }, [firebaseUser]);
 
   const value: AuthContextValue = {
@@ -78,10 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signOut(auth);
     },
     bootstrapAdmin: async (email, password, displayName) => {
-      const usersSnap = await get(ref(db, "users"));
-      const isFirst = !usersSnap.exists();
+      const users = await api.users.getAll();
+      const isFirst = users.length === 0;
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await set(ref(db, `users/${cred.user.uid}`), {
+      await api.users.create({
         email,
         displayName,
         role: isFirst ? "admin" : "standard",

@@ -11,7 +11,7 @@ import { format, startOfDay, startOfWeek, startOfMonth } from "date-fns";
 
 export default function Reports() {
   const { data: items } = useRealtimeList<Item>("items");
-  const { data: movements } = useRealtimeList<StockMovement>("stock_movements");
+  const { data: movements } = useRealtimeList<StockMovement>("stock-movements");
 
   const today = new Date();
   const monthAgo = new Date(today.getTime() - 30 * 86400_000);
