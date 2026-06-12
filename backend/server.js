@@ -380,6 +380,12 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Export the app for serverless hosting (Vercel).
+// When running locally for development use `node backend/server.js` (script `dev:backend`).
+if (process.env.NODE_ENV !== "production" && process.argv[1] && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
